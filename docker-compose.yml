@@ -1,0 +1,57 @@
+version: "3"
+services:
+  backend:
+    container_name: backend
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: always
+    environment:
+      ENV_NAME: production
+    ports:
+      - "5005:5005"
+
+  listen_event:
+    container_name: listen_event
+    restart: unless-stopped
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: npx ts-node src/job/JobListenEventBridgeTomoChain.ts
+    env_file:
+      - ".env"
+
+  listen_event_vault:
+    container_name: listen_event_vault
+    restart: unless-stopped
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: npx ts-node src/job/JobGetVaults.ts
+    env_file:
+      - ".env"
+
+  mysql:
+    image: mysql:latest
+    container_name: mysql-container
+    environment:
+      MYSQL_ROOT_PASSWORD: klaytn
+      MYSQL_DATABASE: klaytn
+      MYSQL_USER: klaytn
+      MYSQL_PASSWORD: klaytn
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+  cache:
+    image: redis:6.2-alpine
+    restart: always
+    ports:
+      - "6379:6379"
+    command: redis-server --save 20 1 --loglevel warning --requirepass eYVX7EwVmmxKPCDmwMtyKVge8oLd2t81
+    volumes:
+      - cache:/data
+
+volumes:
+  mysql_data:
